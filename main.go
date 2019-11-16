@@ -32,6 +32,7 @@ func createSnippet(w http.ResponseWriter, r *http.Request) {
 	//       Also, if we don't use the method to send a status code
 	//		 w.Write will automatically send a 200 OK status code.
 	if r.Method != "POST" {
+		w.Header().Set("Allow", "POST")
 		w.WriteHeader((405))
 		w.Write([]byte("Method Not Allowed"))
 		return
