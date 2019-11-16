@@ -1,8 +1,9 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
+	"strconv"
 )
 
 // Define a home handler function which writes a byte slice containing
@@ -20,7 +21,16 @@ func home(w http.ResponseWriter, r *http.Request) {
 
 // Add a showSnippet handler function.
 func showSnippet(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Display a specific snippet..."))
+	// extract val of id param and convert to int. If fails
+	// or less than 1, render 404 error
+	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	if err != nil || id < 1 {
+		http.NotFound(w, r)
+		return
+	}
+	// use fmt.Fprintf func to interpolate the id value with
+	// our res and write to http.ResponseWriter
+	fmt.Fprintf(w, "Display a specific snippet with ID %d...", id)
 }
 
 // Add a createSnippet handler function.
@@ -28,35 +38,22 @@ func createSnippet(w http.ResponseWriter, r *http.Request) {
 	// check to see if our req is not a POST req
 	// if not, return a 405 error and return, else
 	// continue with creation logic.
+
 	// NOTE: can only call w.WriteHeader once per res.
 	//       Also, if we don't use the method to send a status code
 	//		 w.Write will automatically send a 200 OK status code.
 	if r.Method != "POST" {
+		// Go automatically sets 3 sys-gen'd headers: Date, Content-Length,
+		// and Content-Type... if can't detect Content-Type defaults to
+		// application/octet-stream.
+		// MUST set content-type for JSON b/c Go detecs it as plaintext
+
+		// can also Get, Add, Del with .Header()
+		// Del() wont rm sys-gen'd headers, must access map and set to nil
+		// eg w.Header()["Date"] = nil
 		w.Header().Set("Allow", "POST")
 		http.Error(w, "Method Not Allowed", 405)
 		return
 	}
 	w.Write([]byte("Create a new snippet... "))
-}
-
-func main() {
-	// Use the http.NewServeMux() function to init a new servemux, then
-	// register the home function as the handler for the "/" URL pattern.
-	// the servemux stores mapping between url patterns and correspongind
-	// handlers. usually only use one per app for all routes
-	// NOTE: could also just use http.HandleFunc which uses a
-	// default servmux, but the default is a global var and using it
-	// is a sec risk.
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", home)
-	mux.HandleFunc("/snippet", showSnippet)
-	mux.HandleFunc("/snippet/create", createSnippet)
-
-	// Use the http.ListenAndServe() function to start a new web server. We pass in
-	// two parameters: the TCP network address to listen on (in this case ":4000")
-	// and the servemux we just created. If http.ListenAndServe() returns an error
-	// we use the log.Fatal() function to log the error message and exit.
-	log.Println("starting server on :4000")
-	err := http.ListenAndServe(":4000", mux)
-	log.Fatal((err))
 }
