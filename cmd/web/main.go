@@ -1,22 +1,26 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
+	"github.com/joshuaherrera/snippetbox/pkg/models/mysql"
 	"log"
 	"net/http"
 	"os"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type application struct {
 	errorLog *log.Logger
 	infoLog  *log.Logger
+	snippets *mysql.SnippetModel
 }
 
 func main() {
-	// define command line flag for port # with name addr and
-	// short explanation text. flag.String returns a pointer
 	addr := flag.String("addr", ":4000", "HTTP network address")
-
+	// Must use cli flag and replace pass with password to connect to db
+	dsn := flag.String("dsn", "web:pass@/snippetbox?parseTime;true", "MySQL data source name")
 	//use flag.Parse to parse the cli flag. need to do this b4
 	//attempting to use addr or else it will use default variable
 	flag.Parse()
@@ -26,42 +30,20 @@ func main() {
 	// to indicate additional info to include. flags joined with
 	// bitwise OR operator.
 	infoLog := log.New(os.Stdout, "INFO:\t", log.Ldate|log.Ltime)
-
-	// make error log to write to stderr and log.Lshortfile flag
-	// to include relevant file name and line number
 	errorLog := log.New(os.Stderr, "ERROR:\t", log.Ldate|log.Ltime|log.Lshortfile)
+
+	db, err := openDB(*dsn)
+	if err != nil {
+		errorLog.Fatal(err)
+	}
+	defer db.Close()
 
 	// init new instance of application containing dependencies
 	app := &application{
 		errorLog: errorLog,
 		infoLog:  infoLog,
+		snippets: &mysql.SnippetModel{DB: db},
 	}
-
-	// Use the http.NewServeMux() function to init a new servemux, then
-	// register the home function as the handler for the "/" URL pattern.
-	// the servemux stores mapping between url patterns and correspongind
-	// handlers. usually only use one per app for all routes
-	// NOTE: could also just use http.HandleFunc which uses a
-	// default servmux, but the default is a global var and using it
-	// is a sec risk.
-	mux := http.NewServeMux()
-	// set route declarations to use struct's methods as handler
-	// funcs
-	mux.HandleFunc("/", app.home)
-	mux.HandleFunc("/snippet", app.showSnippet)
-	mux.HandleFunc("/snippet/create", app.createSnippet)
-
-	// create file server to serve static directory
-	//path is relative to proj root
-	//sanitizes all input with filepath.Clean() automatically
-	//to avoid directory traversal attacks.
-	//Can serve a single file with http.ServeFile(w,r, {file})
-	fileServer := http.FileServer(http.Dir("./ui/static/"))
-
-	//register fs as handler for all url paths that start with
-	// /static using mux.Handle. strip /static prefix b4 req
-	//reaches fs
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 
 	// init new http.Server struct to use custom error logger.
 	// set to use same network address and routes as b4
@@ -69,16 +51,26 @@ func main() {
 	srv := &http.Server{
 		Addr:     *addr,
 		ErrorLog: errorLog,
-		Handler:  mux,
+		Handler:  app.routes(),
 	}
 
-	// Use the http.ListenAndServe() function to start a new web server. We pass in
-	// two parameters: the TCP network address to listen on (in this case ":4000")
-	// and the servemux we just created. If http.ListenAndServe() returns an error
-	// we use the log.Fatal() function to log the error message and exit.
-	// must dereference addr pointer
 	infoLog.Printf("starting server on %s", *addr)
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	errorLog.Fatal(err)
-	//STOPPED ON 67
 }
+
+func openDB(dsn string) (*sql.DB, error) {
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	// due to lazy connection establishment, must ping db ti
+	// start a connection
+	if err = db.Ping(); err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
+// stopped at handlers for db, page 102
