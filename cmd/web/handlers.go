@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"strconv"
 )
 
 // Define a home handler function which writes a byte slice containing
 // "Hello from Snippetbox" as the response body.
-func home(w http.ResponseWriter, r *http.Request) {
+func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// Make it so this url path only renders for '/',
 	// otherwise, return a 404 response to the client
 	// Must return or else rest of fcn executes.
@@ -29,7 +28,8 @@ func home(w http.ResponseWriter, r *http.Request) {
 	// pass slice as variadic param
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
-		log.Println(err.Error())
+		// use application struct's logger
+		app.errorLog.Println(err.Error())
 		http.Error(w, "Internal Server Error", 500)
 		return
 	}
@@ -39,13 +39,13 @@ func home(w http.ResponseWriter, r *http.Request) {
 	// to pass in.
 	err = ts.Execute(w, nil)
 	if err != nil {
-		log.Println(err.Error())
+		app.errorLog.Println(err.Error())
 		http.Error(w, "Internal Server Error", 500)
 	}
 }
 
 // Add a showSnippet handler function.
-func showSnippet(w http.ResponseWriter, r *http.Request) {
+func (app application) showSnippet(w http.ResponseWriter, r *http.Request) {
 	// extract val of id param and convert to int. If fails
 	// or less than 1, render 404 error
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
@@ -59,7 +59,7 @@ func showSnippet(w http.ResponseWriter, r *http.Request) {
 }
 
 // Add a createSnippet handler function.
-func createSnippet(w http.ResponseWriter, r *http.Request) {
+func (app application) createSnippet(w http.ResponseWriter, r *http.Request) {
 	// check to see if our req is not a POST req
 	// if not, return a 405 error and return, else
 	// continue with creation logic.
