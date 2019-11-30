@@ -14,7 +14,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// otherwise, return a 404 response to the client
 	// Must return or else rest of fcn executes.
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		app.notFound(w)
 		return
 	}
 	// make a slice referencing templates, home must be first
@@ -28,9 +28,8 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// pass slice as variadic param
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
-		// use application struct's logger
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", 500)
+		// use serverError helper from helpers
+		app.serverError(w, err)
 		return
 	}
 
@@ -39,8 +38,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// to pass in.
 	err = ts.Execute(w, nil)
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", 500)
+		app.serverError(w, err)
 	}
 }
 
@@ -50,7 +48,7 @@ func (app application) showSnippet(w http.ResponseWriter, r *http.Request) {
 	// or less than 1, render 404 error
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil || id < 1 {
-		http.NotFound(w, r)
+		app.notFound(w)
 		return
 	}
 	// use fmt.Fprintf func to interpolate the id value with
@@ -77,7 +75,7 @@ func (app application) createSnippet(w http.ResponseWriter, r *http.Request) {
 		// Del() wont rm sys-gen'd headers, must access map and set to nil
 		// eg w.Header()["Date"] = nil
 		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method Not Allowed", 405)
+		app.clientError(w, http.StatusMethodNotAllowed)
 		return
 	}
 	w.Write([]byte("Create a new snippet... "))
