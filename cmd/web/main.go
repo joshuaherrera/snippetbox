@@ -20,7 +20,7 @@ type application struct {
 func main() {
 	addr := flag.String("addr", ":4000", "HTTP network address")
 	// Must use cli flag and replace pass with password to connect to db
-	dsn := flag.String("dsn", "web:pass@/snippetbox?parseTime;true", "MySQL data source name")
+	dsn := flag.String("dsn", "web:pass@/snippetbox?parseTime=true", "MySQL data source name")
 	//use flag.Parse to parse the cli flag. need to do this b4
 	//attempting to use addr or else it will use default variable
 	flag.Parse()

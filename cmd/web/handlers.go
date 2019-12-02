@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
 	"strconv"
+
+	"github.com/joshuaherrera/snippetbox/pkg/models"
 )
 
 // Define a home handler function which writes a byte slice containing
@@ -17,33 +18,41 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)
 		return
 	}
-	// make a slice referencing templates, home must be first
-	files := []string{
-		"./ui/html/home.page.tmpl",
-		"./ui/html/base.layout.tmpl",
-		"./ui/html/footer.partial.tmpl",
-	}
-	// use template.ParseFiles() fcn to read the template file
-	// into a template set. Log any errors with status code 500
-	// pass slice as variadic param
-	ts, err := template.ParseFiles(files...)
+	s, err := app.snippets.Latest()
 	if err != nil {
-		// use serverError helper from helpers
 		app.serverError(w, err)
 		return
 	}
-
-	// Use Execute() mehtod on template set to write template content
-	// as res body. Last param to Execute() reps dynamic data we want
-	// to pass in.
-	err = ts.Execute(w, nil)
-	if err != nil {
-		app.serverError(w, err)
+	for _, snippet := range s {
+		fmt.Fprintf(w, "%v\n", snippet)
 	}
+	// make a slice referencing templates, home must be first
+	// files := []string{
+	// 	"./ui/html/home.page.tmpl",
+	// 	"./ui/html/base.layout.tmpl",
+	// 	"./ui/html/footer.partial.tmpl",
+	// }
+	// // use template.ParseFiles() fcn to read the template file
+	// // into a template set. Log any errors with status code 500
+	// // pass slice as variadic param
+	// ts, err := template.ParseFiles(files...)
+	// if err != nil {
+	// 	// use serverError helper from helpers
+	// 	app.serverError(w, err)
+	// 	return
+	// }
+
+	// // Use Execute() mehtod on template set to write template content
+	// // as res body. Last param to Execute() reps dynamic data we want
+	// // to pass in.
+	// err = ts.Execute(w, nil)
+	// if err != nil {
+	// 	app.serverError(w, err)
+	// }
 }
 
 // Add a showSnippet handler function.
-func (app application) showSnippet(w http.ResponseWriter, r *http.Request) {
+func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 	// extract val of id param and convert to int. If fails
 	// or less than 1, render 404 error
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
@@ -51,17 +60,22 @@ func (app application) showSnippet(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)
 		return
 	}
-	// use fmt.Fprintf func to interpolate the id value with
-	// our res and write to http.ResponseWriter
-	fmt.Fprintf(w, "Display a specific snippet with ID %d...", id)
+
+	s, err := app.snippets.Get(id)
+
+	if err == models.ErrNoRecord {
+		app.notFound(w)
+		return
+	} else if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Fprintf(w, "%v", s)
 }
 
 // Add a createSnippet handler function.
-func (app application) createSnippet(w http.ResponseWriter, r *http.Request) {
-	// check to see if our req is not a POST req
-	// if not, return a 405 error and return, else
-	// continue with creation logic.
-
+func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 	// NOTE: can only call w.WriteHeader once per res.
 	//       Also, if we don't use the method to send a status code
 	//		 w.Write will automatically send a 200 OK status code.
@@ -78,5 +92,15 @@ func (app application) createSnippet(w http.ResponseWriter, r *http.Request) {
 		app.clientError(w, http.StatusMethodNotAllowed)
 		return
 	}
-	w.Write([]byte("Create a new snippet... "))
+
+	title := "O snail"
+	content := "O snail\nClimb Mt. Fuji,\nBut slowly, slowly!\n\n- Kobayashi Issa"
+	expires := "7"
+
+	id, err := app.snippets.Insert(title, content, expires)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	http.Redirect(w, r, fmt.Sprintf("/snippet?id=%d", id), http.StatusSeeOther)
 }
