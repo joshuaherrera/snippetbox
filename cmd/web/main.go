@@ -3,11 +3,11 @@ package main
 import (
 	"database/sql"
 	"flag"
-	"github.com/joshuaherrera/snippetbox/pkg/models/mysql"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/joshuaherrera/snippetbox/pkg/models/mysql"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -73,4 +73,4 @@ func openDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-// stopped at handlers for db, page 102
+// stopped at ch 5

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"errors"
 	"time"
 )
@@ -11,7 +12,7 @@ var ErrNoRecord = errors.New("models: no matching record found")
 //Snippet defines structure of each snippet in db
 type Snippet struct {
 	ID      int
-	Title   string
+	Title   sql.NullString //example of struct value that can accept NULL
 	Content string
 	Created time.Time
 	Expires time.Time
