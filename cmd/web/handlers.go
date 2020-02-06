@@ -11,44 +11,20 @@ import (
 // Define a home handler function which writes a byte slice containing
 // "Hello from Snippetbox" as the response body.
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	// Make it so this url path only renders for '/',
-	// otherwise, return a 404 response to the client
-	// Must return or else rest of fcn executes.
 	if r.URL.Path != "/" {
 		app.notFound(w)
 		return
 	}
+
 	s, err := app.snippets.Latest()
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	for _, snippet := range s {
-		fmt.Fprintf(w, "%v\n", snippet)
-	}
-	// make a slice referencing templates, home must be first
-	// files := []string{
-	// 	"./ui/html/home.page.tmpl",
-	// 	"./ui/html/base.layout.tmpl",
-	// 	"./ui/html/footer.partial.tmpl",
-	// }
-	// // use template.ParseFiles() fcn to read the template file
-	// // into a template set. Log any errors with status code 500
-	// // pass slice as variadic param
-	// ts, err := template.ParseFiles(files...)
-	// if err != nil {
-	// 	// use serverError helper from helpers
-	// 	app.serverError(w, err)
-	// 	return
-	// }
 
-	// // Use Execute() mehtod on template set to write template content
-	// // as res body. Last param to Execute() reps dynamic data we want
-	// // to pass in.
-	// err = ts.Execute(w, nil)
-	// if err != nil {
-	// 	app.serverError(w, err)
-	// }
+	app.render(w, r, "home.page.tmpl", &templateData{
+		Snippets: s,
+	})
 }
 
 // Add a showSnippet handler function.
@@ -71,7 +47,10 @@ func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "%v", s)
+	app.render(w, r, "show.page.tmpl", &templateData{
+		Snippet: s,
+	})
+
 }
 
 // Add a createSnippet handler function.
