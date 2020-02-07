@@ -3,6 +3,7 @@ package main
 import (
 	"html/template"
 	"path/filepath"
+	"time"
 
 	"github.com/joshuaherrera/snippetbox/pkg/models"
 )
@@ -14,6 +15,15 @@ type templateData struct {
 	CurrentYear int
 	Snippet     *models.Snippet
 	Snippets    []*models.Snippet
+}
+
+func humanDate(t time.Time) string {
+	return t.Format("02 Jan 2006 at 15:04")
+}
+
+// global var to store key lookups to template funcs
+var functions = template.FuncMap{
+	"humanDate": humanDate,
 }
 
 func newTemplateCache(dir string) (map[string]*template.Template, error) {
@@ -29,7 +39,7 @@ func newTemplateCache(dir string) (map[string]*template.Template, error) {
 		// extract whole file name and assign
 		name := filepath.Base(page)
 
-		ts, err := template.ParseFiles(page)
+		ts, err := template.New(name).Funcs(functions).ParseFiles(page)
 		if err != nil {
 			return nil, err
 		}
