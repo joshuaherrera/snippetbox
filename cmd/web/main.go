@@ -82,4 +82,4 @@ func openDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-// stopped at ch 6.5
+// stopped at ch 8

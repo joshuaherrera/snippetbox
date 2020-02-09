@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gorilla/mux"
 	"github.com/joshuaherrera/snippetbox/pkg/models"
 )
 
@@ -31,7 +32,8 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 	// extract val of id param and convert to int. If fails
 	// or less than 1, render 404 error
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil || id < 1 {
 		app.notFound(w)
 		return
@@ -53,24 +55,12 @@ func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (app *application) createSnippetForm(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Create a new snippet..."))
+}
+
 // Add a createSnippet handler function.
 func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
-	// NOTE: can only call w.WriteHeader once per res.
-	//       Also, if we don't use the method to send a status code
-	//		 w.Write will automatically send a 200 OK status code.
-	if r.Method != "POST" {
-		// Go automatically sets 3 sys-gen'd headers: Date, Content-Length,
-		// and Content-Type... if can't detect Content-Type defaults to
-		// application/octet-stream.
-		// MUST set content-type for JSON b/c Go detecs it as plaintext
-
-		// can also Get, Add, Del with .Header()
-		// Del() wont rm sys-gen'd headers, must access map and set to nil
-		// eg w.Header()["Date"] = nil
-		w.Header().Set("Allow", "POST")
-		app.clientError(w, http.StatusMethodNotAllowed)
-		return
-	}
 
 	title := "O snail"
 	content := "O snail\nClimb Mt. Fuji,\nBut slowly, slowly!\n\n- Kobayashi Issa"
@@ -81,5 +71,5 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-	http.Redirect(w, r, fmt.Sprintf("/snippet?id=%d", id), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/snippet/%d", id), http.StatusSeeOther)
 }
