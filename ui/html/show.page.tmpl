@@ -6,10 +6,10 @@
     {{with.Snippet}}
     <div class='snippet'>
         <div class='metadata'>
-            <strong>{{.Title}}</strong>
+            <strong>{{.Title.String}}</strong>
             <span>#{{.ID}}</span>
         </div>
-        <pre><code>{{.Content}}</code></pre>
+        <pre><code>{{.Content.String}}</code></pre>
         <div class='metadata'>
             <time>Created: {{humanDate .Created}}</time>
             <time>Expires: {{.Expires | humanDate}}</time>

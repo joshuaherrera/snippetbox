@@ -13,7 +13,7 @@ var ErrNoRecord = errors.New("models: no matching record found")
 type Snippet struct {
 	ID      int
 	Title   sql.NullString //example of struct value that can accept NULL
-	Content string
+	Content sql.NullString
 	Created time.Time
 	Expires time.Time
 }
