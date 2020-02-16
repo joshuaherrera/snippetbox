@@ -9,12 +9,12 @@ import (
 
 func (app *application) routes() http.Handler {
 	standardMiddleware := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
-	// use for all route declarations
+	dynamicMiddleware := alice.New(app.session.Enable)
 	router := mux.NewRouter()
-	router.HandleFunc("/", app.home)
-	router.HandleFunc("/snippet/create", app.createSnippetForm).Methods(http.MethodGet)
-	router.HandleFunc("/snippet/create", app.createSnippet).Methods(http.MethodPost)
-	router.HandleFunc("/snippet/{id:[0-9]+}", app.showSnippet).Methods(http.MethodGet)
+	router.Handle("/", dynamicMiddleware.ThenFunc(app.home))
+	router.Handle("/snippet/create", dynamicMiddleware.ThenFunc(app.createSnippetForm)).Methods(http.MethodGet)
+	router.Handle("/snippet/create", dynamicMiddleware.ThenFunc(app.createSnippet)).Methods(http.MethodPost)
+	router.Handle("/snippet/{id:[0-9]+}", dynamicMiddleware.ThenFunc(app.showSnippet)).Methods(http.MethodGet)
 
 	// static assets, see zbrains QDT for Noah's implementation
 	fileServer := http.FileServer(http.Dir("./ui/static/"))

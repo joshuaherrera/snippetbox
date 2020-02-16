@@ -89,5 +89,10 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
+
+	// adds msg to key 'flash'; makes new empty session for user if
+	// none found.
+	app.session.Put(r, "flash", "Snippet successfully created!")
+
 	http.Redirect(w, r, fmt.Sprintf("/snippet/%d", id), http.StatusSeeOther)
 }

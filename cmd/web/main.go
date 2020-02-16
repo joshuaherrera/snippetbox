@@ -7,14 +7,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/golangcollege/sessions"
 	"github.com/joshuaherrera/snippetbox/pkg/models/mysql"
 )
 
 type application struct {
 	errorLog      *log.Logger
 	infoLog       *log.Logger
+	session       *sessions.Session
 	snippets      *mysql.SnippetModel
 	templateCache map[string]*template.Template
 }
@@ -25,6 +28,7 @@ func main() {
 	dsn := flag.String("dsn", "web:pass@/snippetbox?parseTime=true", "MySQL data source name")
 	//use flag.Parse to parse the cli flag. need to do this b4
 	//attempting to use addr or else it will use default variable
+	secret := flag.String("secret", "Y3S992S6p9OCUd0Sov54CC^T^rHdBc&v", "Secret key")
 	flag.Parse()
 
 	// create new loggers for writing info msgs. takes 3 params:
@@ -46,10 +50,17 @@ func main() {
 		errorLog.Fatal(err)
 	}
 
+	// configure new session mgr with secret key and set
+	// to expire at 12 hrs
+	session := sessions.New([]byte(*secret))
+	session.Lifetime = 12 * time.Hour
+
 	// init new instance of application containing dependencies
+	// add session mgr to dependencies
 	app := &application{
 		errorLog:      errorLog,
 		infoLog:       infoLog,
+		session:       session,
 		snippets:      &mysql.SnippetModel{DB: db},
 		templateCache: templateCache,
 	}
@@ -82,4 +93,4 @@ func openDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-// stopped at ch 8
+// stopped at ch 10
